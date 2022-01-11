@@ -8,10 +8,7 @@ public class Dbm.Window : Gtk.ApplicationWindow {
         var button = new Gtk.Button.with_label ("Daijoubu");
         child = button;
 
-        var headerbar = new Gtk.HeaderBar () {
-            title_widget = new Gtk.Label ("Dabooma"),
-            show_title_buttons = true
-        };
+        var headerbar = new Dbm.HeaderBar (this);
 
         set_titlebar (headerbar);
     }

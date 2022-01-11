@@ -1,2 +1,2 @@
 # dabooma
-A simple tool to show you bookmarks you need daily
+A daily bookmark manager for the links you need for a day.
