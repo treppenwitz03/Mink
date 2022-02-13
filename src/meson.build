@@ -4,8 +4,7 @@ executable(
     'Main.vala',
     'Application.vala',
     'MainWindow.vala',
-
-    'Widgets/HeaderBar.vala',
+    'Widgets/Options.vala',
 
     dependencies : dependencies,
     install: true

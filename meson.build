@@ -1,5 +1,5 @@
 project(
-    'com.github.zenitsudev.dabooma',
+    'com.github.zenitsudev.mink',
     'vala', 'c',
     version: '0.1'
 )
