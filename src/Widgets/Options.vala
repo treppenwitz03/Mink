@@ -66,12 +66,15 @@ public class Mink.DailySchedules : Gtk.Grid {
 
         var content_area = add_dialog.get_content_area ();
         content_area.orientation = Gtk.Orientation.VERTICAL;
+        content_area.spacing = 12;
 
+        var focus_controller_title = new Gtk.EventControllerFocus ();
         var title_entry = new Gtk.Entry () {
             hexpand = true,
-            height_request = 30,
+            height_request = 20,
             placeholder_text = "Short title e.g. 'Onikabuto'"
         };
+        title_entry.add_controller (focus_controller_title);
 
         content_area.append (new Gtk.Label ("<b>Meeting Title</b>") {
             hexpand = true,
@@ -80,11 +83,13 @@ public class Mink.DailySchedules : Gtk.Grid {
         });
         content_area.append (title_entry);
 
-        var time_entry = new Gtk.Entry () {
+        var focus_controller_time = new Gtk.EventControllerFocus ();
+        var time_entry = new Granite.TimePicker () {
             hexpand = true,
-            height_request = 30,
-            placeholder_text = "Time of Meeting with format 'HH:MM-HH:MM'"
+            height_request = 20,
+            // placeholder_text = "Time of Meeting with format 'HH:MM-HH:MM'"
         };
+        time_entry.add_controller (focus_controller_time);
 
         content_area.append (new Gtk.Label ("<b>Meeting Time</b>") {
             hexpand = true,
@@ -93,11 +98,13 @@ public class Mink.DailySchedules : Gtk.Grid {
         });
         content_area.append (time_entry);
 
+        var focus_controller_link = new Gtk.EventControllerFocus ();
         var link_entry = new Gtk.Entry () {
             hexpand = true,
-            height_request = 30,
+            height_request = 20,
             placeholder_text = "Link of Meeting e.g. 'zoommtg://us.zoom.link'"
         };
+        link_entry.add_controller (focus_controller_link);
 
         content_area.append (new Gtk.Label ("<b>Meeting Link</b>") {
             hexpand = true,
@@ -143,6 +150,7 @@ public class Mink.DailySchedules : Gtk.Grid {
             add_button.margin_bottom = (int) button.active * 10;
         });
 
+        bool can_proceed = false;
         add_dialog.response.connect ((response) => {
             if (response == Gtk.ResponseType.CANCEL) {
                 add_dialog.hide ();
@@ -159,6 +167,36 @@ public class Mink.DailySchedules : Gtk.Grid {
                         link_entry.add_css_class ("reject_entry");
                     }
                 }
+            }
+        });
+
+        focus_controller_title.leave.connect (() => {
+            if (title_entry.text == "") {
+                title_entry.add_css_class ("reject_entry");
+                can_proceed = false;
+            } else {
+                title_entry.remove_css_class ("reject_entry");
+                can_proceed = true;
+            }
+        });
+
+        focus_controller_time.leave.connect (() => {
+            if (time_entry.text == "" && !(check_time_format (time_entry.text))) {
+                time_entry.add_css_class ("reject_entry");
+                can_proceed = false;
+            } else if (time_entry.text != "" && check_time_format (time_entry.text)){
+                time_entry.remove_css_class ("reject_entry");
+                can_proceed = true;
+            }
+        });
+
+        focus_controller_link.leave.connect (() => {
+            if (link_entry.text == "") {
+                link_entry.add_css_class ("reject_entry");
+                can_proceed = false;
+            } else {
+                link_entry.remove_css_class ("reject_entry");
+                can_proceed = true;
             }
         });
     }
