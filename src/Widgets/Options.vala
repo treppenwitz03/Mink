@@ -83,20 +83,27 @@ public class Mink.DailySchedules : Gtk.Grid {
         });
         content_area.append (title_entry);
 
-        var focus_controller_time = new Gtk.EventControllerFocus ();
-        var time_entry = new Granite.TimePicker () {
+        var start_time_picker = new Granite.TimePicker () {
             hexpand = true,
-            height_request = 20,
-            // placeholder_text = "Time of Meeting with format 'HH:MM-HH:MM'"
+            height_request = 20
         };
-        time_entry.add_controller (focus_controller_time);
+
+        var end_time_picker = new Granite.TimePicker () {
+            hexpand = true,
+            height_request = 20
+        };
+
+        var time_picker = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0);
+        time_picker.append (start_time_picker);
+        time_picker.append (new Gtk.Label ("    to  "));
+        time_picker.append (end_time_picker);
 
         content_area.append (new Gtk.Label ("<b>Meeting Time</b>") {
             hexpand = true,
             xalign = -1,
             use_markup = true
         });
-        content_area.append (time_entry);
+        content_area.append (time_picker);
 
         var focus_controller_link = new Gtk.EventControllerFocus ();
         var link_entry = new Gtk.Entry () {
@@ -124,10 +131,13 @@ public class Mink.DailySchedules : Gtk.Grid {
         });
 
         var listbox = new Gtk.ListBox ();
-        listbox.append (add_button);
+
+        var main_grid = new Gtk.Grid ();
+        main_grid.attach (listbox, 0, 0);
+        main_grid.attach (add_button, 0, 1);
 
         var revealer = new Gtk.Revealer () {
-            child = listbox,
+            child = main_grid,
             transition_type = Gtk.RevealerTransitionType.SLIDE_DOWN
         };
         var label = new Gtk.Label ("<b>" + weekday + "</b>") {
@@ -150,76 +160,63 @@ public class Mink.DailySchedules : Gtk.Grid {
             add_button.margin_bottom = (int) button.active * 10;
         });
 
-        bool can_proceed = false;
+        var can_proceed = 0;
         add_dialog.response.connect ((response) => {
             if (response == Gtk.ResponseType.CANCEL) {
                 add_dialog.hide ();
             } else if (response == Gtk.ResponseType.ACCEPT) {
-                if (title_entry.text != "" && time_entry.text != "" && link_entry.text != "") {
-                    if (check_time_format (time_entry.text)) listbox.prepend (new Item (title_entry.text, time_entry.text, link_entry.text));
+                if (can_proceed >= 3) {
+                    listbox.append (new Item (title_entry.text, start_time_picker.text, end_time_picker.text, link_entry.text));
                     add_dialog.hide ();
-                } else {
-                    if (title_entry.text == "") {
-                        title_entry.add_css_class ("reject_entry");
-                    } else if (time_entry.text == "") {
-                        time_entry.add_css_class ("reject_entry");
-                    } else if (link_entry.text == "") {
-                        link_entry.add_css_class ("reject_entry");
-                    }
                 }
+                print (can_proceed.to_string());
             }
         });
 
         focus_controller_title.leave.connect (() => {
             if (title_entry.text == "") {
                 title_entry.add_css_class ("reject_entry");
-                can_proceed = false;
+                can_proceed -= 1;
             } else {
                 title_entry.remove_css_class ("reject_entry");
-                can_proceed = true;
+                can_proceed += 1;
             }
         });
 
-        focus_controller_time.leave.connect (() => {
-            if (time_entry.text == "" && !(check_time_format (time_entry.text))) {
-                time_entry.add_css_class ("reject_entry");
-                can_proceed = false;
-            } else if (time_entry.text != "" && check_time_format (time_entry.text)){
-                time_entry.remove_css_class ("reject_entry");
-                can_proceed = true;
+        end_time_picker.time_changed.connect (() => {
+            if (start_time_picker.text == end_time_picker.text) {
+                start_time_picker.add_css_class ("reject_entry");
+                end_time_picker.add_css_class ("reject_entry");
+                can_proceed -= 1;
+            } else {
+                start_time_picker.remove_css_class ("reject_entry");
+                end_time_picker.remove_css_class ("reject_entry");
+                can_proceed += 1;
             }
         });
 
         focus_controller_link.leave.connect (() => {
             if (link_entry.text == "") {
                 link_entry.add_css_class ("reject_entry");
-                can_proceed = false;
+                can_proceed -= 1;
             } else {
                 link_entry.remove_css_class ("reject_entry");
-                can_proceed = true;
+                can_proceed += 1;
             }
         });
     }
 
-    public bool check_time_format (string time) {
-        if (time.@get (3) == ':' && time.@get (6) == '-' && time.@get (9) == ':' && time.length == 9) {
-            starting_hour = time.split ("-")[0];
-            ending_hour = time.split ("-")[1];
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     public class Item : Gtk.Box {
         public string title { get; set construct; }
-        public string time { get; set construct; }
+        public string starting_time { get; set construct; }
+        public string ending_time { get; set construct; }
         public string link { get; set construct; }
 
-        public Item (string title, string time, string link) {
+        public Item (string title, string starting_time, string ending_time, string link) {
             Object (
                 title: title,
-                time: time,
+                starting_time: starting_time,
+                ending_time: ending_time,
                 link: link
             );
         }
@@ -227,15 +224,24 @@ public class Mink.DailySchedules : Gtk.Grid {
         construct {
             var label = new Gtk.Label (title) {
                 hexpand = true,
-                vexpand = true
+                vexpand = true,
+                xalign = -1,
+                margin_start = 10
             };
+
+            var time = new Gtk.Label (starting_time) {
+                halign = Gtk.Align.END,
+                margin_end = 5
+            };
+
+            append (label);
+            append (time);
+
             var controller = new Gtk.GestureClick ();
             label.add_controller (controller);
 
-            append (label);
-
             controller.pressed.connect (() => {
-                print ("Title: " + title + "\nTime: " + time + "\nLink: " + link + "\n\n\n");
+                print ("Title: " + title + "\nStarting Time: " + starting_time + "\nEnding Time: " + ending_time +"\nLink: " + link + "\n\n\n");
             });
         }
     }
