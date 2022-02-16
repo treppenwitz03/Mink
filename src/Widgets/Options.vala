@@ -117,6 +117,7 @@ public class Mink.LinkItem : Gtk.Box {
 
     construct {
         height_request = 25;
+        tooltip_text = "Edit this item";
 
         var item_editor = new Mink.ItemEditor (this) {
             transient_for = list.schedule_options.window
@@ -138,7 +139,8 @@ public class Mink.LinkItem : Gtk.Box {
 
         var delete_button = new Gtk.Button.from_icon_name ("edit-delete-symbolic") {
             halign = Gtk.Align.END,
-            margin_end = 10
+            margin_end = 10,
+            tooltip_text = "Delete this item"
         };
         delete_button.add_css_class (Granite.STYLE_CLASS_FLAT);
 
@@ -171,6 +173,10 @@ public class Mink.LinkItem : Gtk.Box {
 public class Mink.ItemEditor : Granite.Dialog {
     public Mink.LinkItem item { get; construct; }
     public Gtk.Button acceptance_button { get; set; }
+    public Granite.TimePicker starting_time { get; set; }
+    public Granite.TimePicker ending_time { get; set; }
+    public Gtk.Revealer meeting_time_revealer { get; set; }
+
     public ItemEditor (Mink.LinkItem item) {
         Object (item: item);
     }
@@ -194,9 +200,13 @@ public class Mink.ItemEditor : Granite.Dialog {
             height_request = 30
         };
 
-        var meeting_title_warner = new Gtk.Label ("") {
+        var title_focus_controller = new Gtk.EventControllerFocus ();
+        meeting_title_entry.add_controller (title_focus_controller);
+
+        var meeting_title_warner = new Gtk.Label ("Title should not be empty") {
             halign = Gtk.Align.START
         };
+        meeting_title_warner.add_css_class (Granite.STYLE_CLASS_H4_LABEL);
 
         var meeting_title_revealer = new Gtk.Revealer () {
             child = meeting_title_warner,
@@ -205,14 +215,109 @@ public class Mink.ItemEditor : Granite.Dialog {
 
         var meeting_title_grid = new Gtk.Grid ();
         meeting_title_grid.attach (meeting_title_entry, 0, 0);
-        meeting_title_grid.attach (meeting_title_revealer, 0, 0);
+        meeting_title_grid.attach (meeting_title_revealer, 0, 1);
+
+        var meeting_time = new Gtk.Label ("<b>Meeting Time</b>") {
+            use_markup = true,
+            halign = Gtk.Align.START
+        };
+
+        starting_time = new Granite.TimePicker () {
+            hexpand = true
+        };
+
+        ending_time = new Granite.TimePicker () {
+            hexpand = true
+        };
+
+        var time_box = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0);
+        time_box.append (starting_time);
+        time_box.append (new Gtk.Label ("   to    "));
+        time_box.append (ending_time);
+
+        var meeting_time_warner = new Gtk.Label ("Times must not be the same") {
+            halign = Gtk.Align.START
+        };
+        meeting_time_warner.add_css_class (Granite.STYLE_CLASS_H4_LABEL);
+
+        meeting_time_revealer = new Gtk.Revealer () {
+            child = meeting_time_warner,
+            transition_type = Gtk.RevealerTransitionType.SLIDE_DOWN
+        };
+
+        var meeting_time_grid = new Gtk.Grid ();
+        meeting_time_grid.attach (time_box, 0, 0);
+        meeting_time_grid.attach (meeting_time_revealer, 0, 1);
+
+        var meeting_link = new Gtk.Label ("<b>Meeting Link</b>") {
+            use_markup = true,
+            halign = Gtk.Align.START
+        };
+
+        var meeting_link_entry = new Gtk.Entry () {
+            placeholder_text = "Link your meeting eg. from Zoom",
+            tooltip_text = "Meeting Link",
+            hexpand = true,
+            height_request = 30
+        };
+
+        var link_focus_controller = new Gtk.EventControllerFocus ();
+        meeting_link_entry.add_controller (link_focus_controller);
+
+        var meeting_link_warner = new Gtk.Label ("Link should not be empty") {
+            halign = Gtk.Align.START
+        };
+        meeting_link_warner.add_css_class (Granite.STYLE_CLASS_H4_LABEL);
+
+        var meeting_link_revealer = new Gtk.Revealer () {
+            child = meeting_link_warner,
+            transition_type = Gtk.RevealerTransitionType.SLIDE_DOWN
+        };
+
+        var meeting_link_grid = new Gtk.Grid ();
+        meeting_link_grid.attach (meeting_link_entry, 0, 0);
+        meeting_link_grid.attach (meeting_link_revealer, 0, 1);
 
         var content_area = this.get_content_area ();
         content_area.orientation = Gtk.Orientation.VERTICAL;
-        content_area.spacing = 0;
+        content_area.spacing = 10;
 
         content_area.append (meeting_title);
         content_area.append (meeting_title_grid);
+        content_area.append (meeting_time);
+        content_area.append (meeting_time_grid);
+        content_area.append (meeting_link);
+        content_area.append (meeting_link_grid);
+
+        var title_ready = false;
+        var link_ready = false;
+
+        title_focus_controller.leave.connect (() => {
+            if (meeting_title_entry.text == "") {
+                meeting_title_entry.add_css_class ("reject_entry");
+                meeting_title_revealer.reveal_child = true;
+                title_ready = false;
+            } else {
+                meeting_title_entry.remove_css_class ("reject_entry");
+                meeting_title_revealer.reveal_child = false;
+                title_ready = true;
+            }
+        });
+
+        starting_time.time_changed.connect (() => { time_ready (); });
+        ending_time.time_changed.connect (() => { time_ready (); });
+
+        link_focus_controller.leave.connect (() => {
+            if (meeting_link_entry.text == "") {
+                meeting_link_entry.add_css_class ("reject_entry");
+                meeting_link_revealer.reveal_child = true;
+                link_ready = false;
+            } else {
+                meeting_link_entry.remove_css_class ("reject_entry");
+                meeting_link_revealer.reveal_child = false;
+                link_ready = true;
+            }
+        });
 
         this.response.connect ((response) => {
             switch (response) {
@@ -220,10 +325,28 @@ public class Mink.ItemEditor : Granite.Dialog {
                     this.hide ();
                     break;
                 case Gtk.ResponseType.ACCEPT:
-                    print ("Inazuma shines Eternal");
-                    this.hide ();
+                    if (title_ready && time_ready () && link_ready) {
+                        item.title.label = meeting_title_entry.text;
+                        item.starting_time.label = starting_time.text;
+                        print ("Inazuma shines Eternal");
+                        this.hide ();
+                    }
                     break;
             }
         });
+    }
+
+    public bool time_ready () {
+        if (starting_time.text == ending_time.text) {
+            starting_time.add_css_class ("reject_entry");
+            ending_time.add_css_class ("reject_entry");
+            meeting_time_revealer.reveal_child = true;
+            return false;
+        } else {
+            starting_time.remove_css_class ("reject_entry");
+            ending_time.remove_css_class ("reject_entry");
+            meeting_time_revealer.reveal_child = false;
+            return true;
+        }
     }
 }

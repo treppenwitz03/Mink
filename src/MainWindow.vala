@@ -109,6 +109,7 @@ public class Mink.Window : Gtk.ApplicationWindow {
                 color: @accent_color_900;
                 font-weight: bold;
             }
+
             .reject_entry {
                 border-color: red;
             }
