@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema path="/com/github/zenitsudev/mink/schedules/" id="com.github.zenitsudev.mink.schedules">
+    <key name="monday" type="as">
+      <default>[]</default>
+      <summary>The scheduled meetings for Monday.</summary>
+      <description>This houses the scheduled meetings for Monday.</description>
+    </key>
+    <key name="tuesday" type="as">
+      <default>[]</default>
+      <summary>The scheduled meetings for Tuesday.</summary>
+      <description>This houses the scheduled meetings for Tuesday.</description>
+    </key>
+    <key name="wednesday" type="as">
+      <default>[]</default>
+      <summary>The scheduled meetings for Wednesday.</summary>
+      <description>This houses the scheduled meetings for Wednesday.</description>
+    </key>
+    <key name="thursday" type="as">
+      <default>[]</default>
+      <summary>The scheduled meetings for Thursday.</summary>
+      <description>This houses the scheduled meetings for Thursday.</description>
+    </key>
+    <key name="friday" type="as">
+      <default>[]</default>
+      <summary>The scheduled meetings for Friday.</summary>
+      <description>This houses the scheduled meetings for Friday.</description>
+    </key>
+    <key name="saturday" type="as">
+      <default>[]</default>
+      <summary>The scheduled meetings for Saturday.</summary>
+      <description>This houses the scheduled meetings for Saturday.</description>
+    </key>
+    <key name="sunday" type="as">
+      <default>[]</default>
+      <summary>The scheduled meetings for Sunday.</summary>
+      <description>This houses the scheduled meetings for Sunday.</description>
+    </key>
+  </schema>
+</schemalist>

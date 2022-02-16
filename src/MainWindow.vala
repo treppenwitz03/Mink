@@ -49,7 +49,7 @@ public class Mink.Window : Gtk.ApplicationWindow {
         today_grid.attach (subject, 0, 1);
         today_grid.attach (enter, 0, 2);
 
-        var options = new Mink.Options (this) {
+        var options = new Mink.ScheduleOptions (this) {
             hexpand = true,
             vexpand = true
         };
@@ -73,8 +73,8 @@ public class Mink.Window : Gtk.ApplicationWindow {
         grid.attach (stack, 0, 2);
 
         decorated = false;
-        default_width = 250;
-        default_height = 350;
+        default_width = 275;
+        default_height = 375;
         resizable = false;
 
         var window_handle = new Gtk.WindowHandle () {

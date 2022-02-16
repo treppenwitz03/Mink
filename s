@@ -182,38 +182,6 @@ public class Mink.ItemEditor : Granite.Dialog {
         add_button ("Cancel", Gtk.ResponseType.CANCEL);
         acceptance_button = (Gtk.Button) add_button ("Add", Gtk.ResponseType.ACCEPT);
 
-        var meeting_title = new Gtk.Label ("<b>Meeting Title</b>") {
-            use_markup = true,
-            halign = Gtk.Align.START
-        };
-
-        var meeting_title_entry = new Gtk.Entry () {
-            placeholder_text = "Title for your meeting eg. 'Onikabuto'",
-            tooltip_text = "Meeting Title",
-            hexpand = true,
-            height_request = 30
-        };
-
-        var meeting_title_warner = new Gtk.Label ("") {
-            halign = Gtk.Align.START
-        };
-
-        var meeting_title_revealer = new Gtk.Revealer () {
-            child = meeting_title_warner,
-            transition_type = Gtk.RevealerTransitionType.SLIDE_DOWN
-        };
-
-        var meeting_title_grid = new Gtk.Grid ();
-        meeting_title_grid.attach (meeting_title_entry, 0, 0);
-        meeting_title_grid.attach (meeting_title_revealer, 0, 0);
-
-        var content_area = this.get_content_area ();
-        content_area.orientation = Gtk.Orientation.VERTICAL;
-        content_area.spacing = 0;
-
-        content_area.append (meeting_title);
-        content_area.append (meeting_title_grid);
-
         this.response.connect ((response) => {
             switch (response) {
                 case Gtk.ResponseType.CANCEL:

@@ -18,6 +18,6 @@ dependencies = [
 
 # subdir('po')
 subdir('src')
-# subdir('data')
+subdir('data')
 
-# meson.add_install_script('meson/post_install.py')
+meson.add_install_script('meson/post_install.py')
