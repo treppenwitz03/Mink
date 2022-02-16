@@ -52,6 +52,7 @@ public class Mink.LinkList : Gtk.Grid {
     public string weekday { get; construct; }
     public Mink.ScheduleOptions schedule_options { get; construct; }
     public string[] schedules_for_day { get; set; }
+    public Gtk.ListBox listbox { get; set; }
 
     public LinkList (Mink.ScheduleOptions schedule_options, string weekday) {
         Object (
@@ -63,7 +64,7 @@ public class Mink.LinkList : Gtk.Grid {
     construct {
         schedules_for_day = schedule_options.settings.get_strv (weekday.ascii_down ());
 
-        var listbox = new Gtk.ListBox ();
+        listbox = new Gtk.ListBox ();
 
         var add_button = new Gtk.Button.with_label ("+") {
             hexpand = true
@@ -137,6 +138,13 @@ public class Mink.LinkItem : Gtk.Box {
             halign = Gtk.Align.END
         };
 
+        var click_controller = new Gtk.GestureClick ();
+
+        var clickable_holder = new Gtk.Grid ();
+        clickable_holder.attach (title, 0, 0);
+        clickable_holder.attach (starting_time, 1, 0);
+        clickable_holder.add_controller (click_controller);
+
         var delete_button = new Gtk.Button.from_icon_name ("edit-delete-symbolic") {
             halign = Gtk.Align.END,
             margin_end = 10,
@@ -144,15 +152,11 @@ public class Mink.LinkItem : Gtk.Box {
         };
         delete_button.add_css_class (Granite.STYLE_CLASS_FLAT);
 
-        append (title);
-        append (starting_time);
+        append (clickable_holder);
         append (delete_button);
 
-        var click_controller = new Gtk.GestureClick ();
-        this.add_controller (click_controller);
-
         delete_button.clicked.connect (() => {
-            this.destroy ();
+            this.hide ();
         });
 
         click_controller.pressed.connect (() => {
