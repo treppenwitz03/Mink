@@ -51,7 +51,6 @@ public class Mink.LinkList : Gtk.Grid {
     public Mink.ScheduleOptions schedule_options { get; construct; }
     public Gtk.ListBox listbox { get; set; }
     public Settings settings { get; set; }
-    static string[] schedules_for_day;
 
     public LinkList (Mink.ScheduleOptions schedule_options, string weekday) {
         Object (
@@ -92,7 +91,7 @@ public class Mink.LinkList : Gtk.Grid {
         can_focus = false;
 
         settings = new Settings ("com.github.zenitsudev.mink.schedules");
-        schedules_for_day = settings.get_strv (weekday.ascii_down ());
+        var schedules_for_day = settings.get_strv (weekday.ascii_down ());
 
         button.toggled.connect (() => {
             revealer.reveal_child = button.active;
@@ -107,8 +106,13 @@ public class Mink.LinkList : Gtk.Grid {
             var existing_item = new LinkItem (this, false) {
                 first_time = false
             };
-            existing_item.title.label = schedules.split ("®")[0];
-            existing_item.starting_time.label = schedules.split ("®")[1].split ("-")[0];
+            var splitted = schedules.split ("®");
+            existing_item.title = splitted[0];
+            existing_item.starting_time = splitted[1].split ("-")[0];
+            existing_item.ending_time = splitted[1].split ("-")[1];
+            existing_item.link = splitted[2];
+            existing_item.title_label.label = existing_item.title;
+            existing_item.starting_time_label.label = existing_item.starting_time;
             listbox.append (existing_item);
         }
     }
@@ -117,8 +121,13 @@ public class Mink.LinkList : Gtk.Grid {
         public Mink.LinkList list { get; construct; }
         public bool first_time { get; set construct; }
 
-        public Gtk.Label title { get; set; }
-        public Gtk.Label starting_time { get; set; }
+        public Gtk.Label title_label { get; set; }
+        public Gtk.Label starting_time_label { get; set; }
+
+        public string title { get; set; }
+        public string starting_time { get; set; }
+        public string ending_time { get; set; }
+        public string link { get; set; }
 
         public LinkItem (Mink.LinkList list, bool first_time) {
             Object (
@@ -135,16 +144,16 @@ public class Mink.LinkList : Gtk.Grid {
                 transient_for = list.schedule_options.window
             };
 
-            title = new Gtk.Label ("") {
+            title_label = new Gtk.Label ("") {
                 use_markup = true,
                 ellipsize = Pango.EllipsizeMode.END,
-                max_width_chars = 15,
+                max_width_chars = 10,
                 xalign = -1,
                 hexpand = true,
                 margin_start = 10
             };
 
-            starting_time = new Gtk.Label ("") {
+            starting_time_label = new Gtk.Label ("") {
                 margin_end = 5,
                 halign = Gtk.Align.END
             };
@@ -152,8 +161,8 @@ public class Mink.LinkList : Gtk.Grid {
             var click_controller = new Gtk.GestureClick ();
 
             var clickable_holder = new Gtk.Grid ();
-            clickable_holder.attach (title, 0, 0);
-            clickable_holder.attach (starting_time, 1, 0);
+            clickable_holder.attach (title_label, 0, 0);
+            clickable_holder.attach (starting_time_label, 1, 0);
             clickable_holder.add_controller (click_controller);
 
             var delete_button = new Gtk.Button.from_icon_name ("edit-delete-symbolic") {
@@ -173,6 +182,10 @@ public class Mink.LinkList : Gtk.Grid {
             click_controller.pressed.connect (() => {
                 if (!first_time) {
                     item_editor.acceptance_button.label = "Edit";
+                    item_editor.meeting_title_entry.text = title;
+                    item_editor.starting_time_picker.text = starting_time;
+                    item_editor.ending_time_picker.text = ending_time;
+                    item_editor.meeting_link_entry.text = link;
                 }
 
                 item_editor.show ();
@@ -188,9 +201,12 @@ public class Mink.LinkList : Gtk.Grid {
         public class ItemEditor : Granite.Dialog {
             public LinkItem item { get; construct; }
             public Gtk.Button acceptance_button { get; set; }
-            public Granite.TimePicker starting_time { get; set; }
-            public Granite.TimePicker ending_time { get; set; }
             public Gtk.Revealer meeting_time_revealer { get; set; }
+
+            public Gtk.Entry meeting_title_entry { get; set; }
+            public Granite.TimePicker starting_time_picker { get; set; }
+            public Granite.TimePicker ending_time_picker { get; set; }
+            public Gtk.Entry meeting_link_entry { get; set; }
 
             public ItemEditor (LinkItem item) {
                 Object (item: item);
@@ -208,7 +224,7 @@ public class Mink.LinkList : Gtk.Grid {
                     halign = Gtk.Align.START
                 };
 
-                var meeting_title_entry = new Gtk.Entry () {
+                meeting_title_entry = new Gtk.Entry () {
                     placeholder_text = "Title for your meeting eg. 'Onikabuto'",
                     tooltip_text = "Meeting Title",
                     hexpand = true,
@@ -237,18 +253,18 @@ public class Mink.LinkList : Gtk.Grid {
                     halign = Gtk.Align.START
                 };
 
-                starting_time = new Granite.TimePicker () {
+                starting_time_picker = new Granite.TimePicker () {
                     hexpand = true
                 };
 
-                ending_time = new Granite.TimePicker () {
+                ending_time_picker = new Granite.TimePicker () {
                     hexpand = true
                 };
 
                 var time_box = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0);
-                time_box.append (starting_time);
+                time_box.append (starting_time_picker);
                 time_box.append (new Gtk.Label ("   to    "));
-                time_box.append (ending_time);
+                time_box.append (ending_time_picker);
 
                 var meeting_time_warner = new Gtk.Label ("Times must not be the same") {
                     halign = Gtk.Align.START
@@ -269,7 +285,7 @@ public class Mink.LinkList : Gtk.Grid {
                     halign = Gtk.Align.START
                 };
 
-                var meeting_link_entry = new Gtk.Entry () {
+                meeting_link_entry = new Gtk.Entry () {
                     placeholder_text = "Link your meeting eg. from Zoom",
                     tooltip_text = "Meeting Link",
                     hexpand = true,
@@ -293,16 +309,25 @@ public class Mink.LinkList : Gtk.Grid {
                 meeting_link_grid.attach (meeting_link_entry, 0, 0);
                 meeting_link_grid.attach (meeting_link_revealer, 0, 1);
 
-                var content_area = this.get_content_area ();
-                content_area.orientation = Gtk.Orientation.VERTICAL;
-                content_area.spacing = 10;
+                var content_area_child = new Gtk.Box (Gtk.Orientation.VERTICAL, 10);
 
-                content_area.append (meeting_title);
-                content_area.append (meeting_title_grid);
-                content_area.append (meeting_time);
-                content_area.append (meeting_time_grid);
-                content_area.append (meeting_link);
-                content_area.append (meeting_link_grid);
+                content_area_child.append (meeting_title);
+                content_area_child.append (meeting_title_grid);
+                content_area_child.append (meeting_time);
+                content_area_child.append (meeting_time_grid);
+                content_area_child.append (meeting_link);
+                content_area_child.append (meeting_link_grid);
+
+                var toast = new Granite.Widgets.Toast ("Item already exists. Try again.");
+
+                var overlay = new Gtk.Overlay () {
+                    child = content_area_child,
+                    hexpand = true,
+                    vexpand = true
+                };
+                overlay.add_overlay (toast);
+
+                this.get_content_area ().append (overlay);
 
                 var title_ready = false;
                 var link_ready = false;
@@ -319,8 +344,8 @@ public class Mink.LinkList : Gtk.Grid {
                     }
                 });
 
-                starting_time.time_changed.connect (() => { time_ready (); });
-                ending_time.time_changed.connect (() => { time_ready (); });
+                starting_time_picker.time_changed.connect (() => { time_ready (); });
+                ending_time_picker.time_changed.connect (() => { time_ready (); });
 
                 link_focus_controller.leave.connect (() => {
                     if (meeting_link_entry.text == "") {
@@ -341,16 +366,32 @@ public class Mink.LinkList : Gtk.Grid {
                             break;
                         case Gtk.ResponseType.ACCEPT:
                             if (title_ready && time_ready () && link_ready) {
-                                item.title.label = meeting_title_entry.text;
-                                item.starting_time.label = starting_time.text;
-                                var entry = meeting_title_entry.text + "®" + starting_time.text + "-" + ending_time.text + "®" + meeting_link_entry.text;
-                                if (entry in schedules_for_day) {
-                                    print ("Item already exists.");
-                                } else {
+                                item.title_label.label = meeting_title_entry.text;
+                                item.starting_time_label.label = starting_time_picker.text;
+                                string[] schedules_for_day = item.list.settings.get_strv (item.list.weekday.ascii_down ());
+                                var entry = meeting_title_entry.text + "®" + starting_time_picker.text + "-" + ending_time_picker.text + "®" + meeting_link_entry.text;
+                                print (acceptance_button.label);
+                                if (acceptance_button.label == "Edit") {
+                                    item.title = meeting_title_entry.text;
+                                    item.starting_time = starting_time_picker.text;
+                                    item.ending_time = ending_time_picker.text;
+                                    item.link = meeting_link_entry.text;
                                     schedules_for_day += entry;
                                     item.list.settings.set_strv (item.list.weekday.ascii_down (), schedules_for_day);
+                                    this.hide ();
+                                } else {
+                                    if (entry in schedules_for_day) {
+                                        toast.send_notification ();
+                                    } else {
+                                        item.title = meeting_title_entry.text;
+                                        item.starting_time = starting_time_picker.text;
+                                        item.ending_time = ending_time_picker.text;
+                                        item.link = meeting_link_entry.text;
+                                        schedules_for_day += entry;
+                                        item.list.settings.set_strv (item.list.weekday.ascii_down (), schedules_for_day);
+                                        this.hide ();
+                                    }
                                 }
-                                this.hide ();
                             }
                             break;
                     }
@@ -358,14 +399,14 @@ public class Mink.LinkList : Gtk.Grid {
             }
 
             public bool time_ready () {
-                if (starting_time.text == ending_time.text) {
-                    starting_time.add_css_class ("reject_entry");
-                    ending_time.add_css_class ("reject_entry");
+                if (starting_time_picker.text == ending_time_picker.text) {
+                    starting_time_picker.add_css_class ("reject_entry");
+                    ending_time_picker.add_css_class ("reject_entry");
                     meeting_time_revealer.reveal_child = true;
                     return false;
                 } else {
-                    starting_time.remove_css_class ("reject_entry");
-                    ending_time.remove_css_class ("reject_entry");
+                    starting_time_picker.remove_css_class ("reject_entry");
+                    ending_time_picker.remove_css_class ("reject_entry");
                     meeting_time_revealer.reveal_child = false;
                     return true;
                 }
